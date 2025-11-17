@@ -15,6 +15,7 @@ import model.User;
 import logic.*;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import databasePart1.DatabaseHelper;
@@ -576,6 +577,7 @@ public class InitialAccessPage {
     public void handleSignUp(TextField usernameField, PasswordField passwordField, TextField inviteCodeField, Label errorLabel, Button signUpBtn, Stage primaryStage) {
         String userName = usernameField.getText() == null ? "" : usernameField.getText().trim();
         String password = passwordField.getText() == null ? "" : passwordField.getText();
+        String inviteCode = inviteCodeField.getText() == null ? "" : inviteCodeField.getText().trim();
 
         // Validate username
         String userNameError = UserNameRecognizer.checkForValidUserName(userName);
@@ -591,23 +593,59 @@ public class InitialAccessPage {
             return;
         }
 
+        // Validate invitation code
+        if (inviteCode.isEmpty()) {
+            errorLabel.setText("Invitation code is required.");
+            return;
+        }
+
         signUpBtn.setDisable(true);
         errorLabel.setText("");
 
         try {
-            // Create user with STUDENT role by default
-            User user = User.createUser(userName, password, User.Role.STUDENT, userName, "", null);
+            // Get roles from invitation code (returns List<String>)
+            List<String> codeRoleStrings = databaseHelper.allCodeRoles(inviteCode);
+            
+            if (codeRoleStrings == null || codeRoleStrings.isEmpty()) {
+                errorLabel.setText("Invalid invitation code.");
+                signUpBtn.setDisable(false);
+                return;
+            }
+
+            // Convert strings to Role enums
+            List<User.Role> codeRoles = new ArrayList<>();
+            for (String roleStr : codeRoleStrings) {
+                try {
+                    User.Role role = User.Role.valueOf(roleStr.toUpperCase());
+                    codeRoles.add(role);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Invalid role string: " + roleStr);
+                }
+            }
+
+            if (codeRoles.isEmpty()) {
+                errorLabel.setText("Invalid roles in invitation code.");
+                signUpBtn.setDisable(false);
+                return;
+            }
+
+            // Create user with the FIRST role from the invitation code
+            User.Role primaryRole = codeRoles.get(0);
+            User user = User.createUser(userName, password, primaryRole, userName, "", null);
             StatusData.currUser = user;
-            
-            
 
             // Register in DB
             databaseHelper.register(user);
-            databaseHelper.addUserRoles(user.getUserName(), user.getRole());
             
+            // Add ALL roles from the invitation code to the user
+            for (User.Role role : codeRoles) {
+                databaseHelper.addUserRoles(user.getUserName(), role);
+            }
+            
+            System.out.println("User " + userName + " registered with roles: " + codeRoles);
+
             // Show announcement popup if there are unread announcements
             AnnouncementPopup.showIfNeeded(primaryStage, user);
-
 
             Alert success = new Alert(Alert.AlertType.INFORMATION, "Account created successfully!", ButtonType.OK);
             success.showAndWait();

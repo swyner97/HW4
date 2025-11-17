@@ -344,16 +344,26 @@ public class DatabaseHelper {
     }
 
     public String generateInvitationCode() {
-        String code = UUID.randomUUID().toString().substring(0, 4);
-        String query = "INSERT INTO InvitationCodes (code) VALUES (?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-            pstmt.setString(1, code);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
+        final int MAX_TRIES = 10;
+        for (int attempt = 0; attempt < MAX_TRIES; attempt++) {
+            String code = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 8).toUpperCase();
+
+            String query = "INSERT INTO InvitationCodes (code, isUsed) VALUES (?, FALSE)";
+            try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+                pstmt.setString(1, code);
+                pstmt.executeUpdate();
+                return code;
+            } catch (SQLException e) {
+
+                if (attempt == MAX_TRIES - 1) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
         }
-        return code;
+        return null;
     }
+
 
     public boolean validateInvitationCode(String code) {
         String query = "SELECT * FROM InvitationCodes WHERE code = ? AND isUsed = FALSE";

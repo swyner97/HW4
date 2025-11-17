@@ -1,6 +1,9 @@
 package pages;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import databasePart1.*;
 import javafx.geometry.Insets;
@@ -68,22 +71,65 @@ public class InvitationPage {
         inviteCodeLabel.setWrapText(true);
 
         showCodeButton.setOnAction(a -> {
-            // Generate the invitation code using the databaseHelper and set it to the label
+            // collect selected roles
+            List<Role> selectedRoles = new ArrayList<>();
+            if (studentRole.isSelected()) selectedRoles.add(Role.STUDENT);
+            if (instructorRole.isSelected()) selectedRoles.add(Role.INSTRUCTOR);
+            if (reviewerRole.isSelected()) selectedRoles.add(Role.REVIEWER);
+            if (adminRole.isSelected()) selectedRoles.add(Role.ADMIN);
+            if (staffRole.isSelected()) selectedRoles.add(Role.STAFF);
+
+            if (selectedRoles.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Please select at least one role to assign to the invitation code.", ButtonType.OK);
+                alert.showAndWait();
+                return;
+            }
+
+            // Generate invitation code (databaseHelper should ensure uniqueness)
             String invitationCode = databaseHelper.generateInvitationCode();
-            checkedBox(studentRole, databaseHelper,Role.STUDENT, invitationCode);
-            checkedBox(instructorRole, databaseHelper, Role.INSTRUCTOR, invitationCode);
-            checkedBox(reviewerRole, databaseHelper, Role.REVIEWER, invitationCode);
-            checkedBox(adminRole, databaseHelper, Role.ADMIN, invitationCode);
-            checkedBox(staffRole, databaseHelper, Role.STAFF, invitationCode);
+
+            // persist roles for the code
+            for (Role role : selectedRoles) {
+                try {
+                    databaseHelper.addRoleVIACode(invitationCode, role);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    // If error, show user-friendly alert and stop
+                    Alert err = new Alert(Alert.AlertType.ERROR, "Failed to save role " + role + " for code " + invitationCode);
+                    err.showAndWait();
+                    return;
+                }
+            }
+
             inviteCodeLabel.setText("Invitation Code: " + invitationCode);
-            
-            // Debugging
+
+            // Add copy-to-clipboard button (inline)
+            Button copyBtn = new Button("Copy Code");
+            copyBtn.setOnAction(ev -> {
+                final javafx.scene.input.Clipboard cb = javafx.scene.input.Clipboard.getSystemClipboard();
+                final javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                content.putString(invitationCode);
+                cb.setContent(content);
+            });
+
+            // show roles assigned (nice UX)
+            Label assignedRolesLabel = new Label("Assigned roles: " + selectedRoles.stream().map(Enum::name).collect(Collectors.joining(", ")));
+            assignedRolesLabel.setWrapText(true);
+
+            // add to layout (remove previous copy/role labels first)
+            layout.getChildren().removeIf(node -> node.getId() != null && (node.getId().equals("inviteCopy") || node.getId().equals("assignedRoles")));
+            copyBtn.setId("inviteCopy");
+            assignedRolesLabel.setId("assignedRoles");
+            layout.getChildren().addAll(assignedRolesLabel, copyBtn);
+
+            // Debugging: print to console the roles saved
             try {
-                System.out.println(databaseHelper.allCodeRoles(invitationCode));
+                System.out.println("Code roles from DB: " + databaseHelper.allCodeRoles(invitationCode));
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         });
+
 
         layout.getChildren().addAll(userLabel, roleLabel, roleBox, showCodeButton, inviteCodeLabel);
         

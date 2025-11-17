@@ -18,7 +18,6 @@ public class FAQ {
 
     // -------- Constructors --------
 
-    /** Default constructor */
     public FAQ() {}
 
     /**
