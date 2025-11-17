@@ -4,3 +4,5 @@
 .project
 .settings
 h2
+JUnit 4
+module-info.java

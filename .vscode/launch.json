@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "PasswordRecognizer",
+            "request": "launch",
+            "mainClass": "application.PasswordRecognizer",
+            "projectName": "CSE360-Team11"
+        },
+        {
+            "type": "java",
+            "name": "Launch Tests",
+            "request": "launch",
+            "mainClass": "",
+            "vmArgs": "--module-path \"${env:PATH_TO_FX}\" --add-modules javafx.controls,javafx.fxml,javafx.swing",
+            "env": {
+                "PATH_TO_FX": "C:\\Path\\To\\JavaFX\\SDK\\lib"
+            }
+        }
+    ]
+}
