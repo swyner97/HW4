@@ -22,7 +22,7 @@ public class StatusData {
     public static Answers answers;
     
     public static User currUser;
-    public static final boolean DEV_MODE = true;
+    public static final boolean DEV_MODE = false;
     // Window size constants
     public static final int WINDOW_WIDTH = 1500;
     public static final int WINDOW_HEIGHT =1000;
