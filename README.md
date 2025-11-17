@@ -1,5 +1,5 @@
 # CSE360 - Homework 4  
-**Project Title:** Course Support System (HW4)  
+**Project Title:** Staff Role (HW4)  
 **Author:** Sarah Wyner 
 **Course:** CSE360 – Software Engineering  
 
